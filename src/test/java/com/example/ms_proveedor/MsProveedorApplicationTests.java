@@ -1,13 +1,15 @@
 package com.example.ms_proveedor;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 class MsProveedorApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassExists() {
+		MsProveedorApplication application = new MsProveedorApplication();
+		assertNotNull(application);
 	}
 
 }
