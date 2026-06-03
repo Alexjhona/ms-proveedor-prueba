@@ -3,6 +3,7 @@ package com.example.ms_proveedor.controller;
 import com.example.ms_proveedor.dto.ProveedorDto;
 import com.example.ms_proveedor.service.ProveedorService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +14,13 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -182,6 +186,120 @@ class ProveedorControllerTest {
         mockMvc.perform(post("/api/proveedores")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Validación fallida"))
+                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.mensajes.direccion").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.mensajes.telefono").value("Campo obligatorio"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/proveedores/{id} - retorna Bad Request si datos obligatorios estan vacios")
+    void actualizarProveedor_DatosInvalidos_RetornaBadRequest() throws Exception {
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("")
+                .razonSocialONombre("Proveedor Test")
+                .direccion("")
+                .telefono("")
+                .build();
+
+        mockMvc.perform(put("/api/proveedores/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Validación fallida"))
+                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.mensajes.direccion").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.mensajes.telefono").value("Campo obligatorio"));
+    }
+
+    @Test
+    @DisplayName("POST /api/proveedores - retorna Bad Request si datos obligatorios son nulos")
+    void crearProveedor_DatosNulos_RetornaBadRequestConMensajes() throws Exception {
+        ProveedorDto request = ProveedorDto.builder()
+                .razonSocialONombre("Proveedor Test")
+                .build();
+
+        mockMvc.perform(post("/api/proveedores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Validación fallida"))
+                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.mensajes.direccion").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.mensajes.telefono").value("Campo obligatorio"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/proveedores/{id} - retorna Bad Request si DNI/RUC tiene formato invalido")
+    void actualizarProveedor_DocumentoInvalido_RetornaBadRequestConMensaje() throws Exception {
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("ABC123")
+                .razonSocialONombre("Proveedor Test")
+                .direccion("Av. Peru 123")
+                .telefono("987654321")
+                .build();
+
+        mockMvc.perform(put("/api/proveedores/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Validación fallida"))
+                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Formato inválido"));
+    }
+
+    @Test
+    @DisplayName("GET /api/proveedores/{id} - propaga error del servicio cuando no existe")
+    void obtenerProveedor_CuandoServicioLanzaError_PropagaExcepcion() {
+        when(proveedorService.obtenerProveedorPorId(99L))
+                .thenThrow(new IllegalArgumentException("Cliente no encontrado con id: 99"));
+
+        ServletException exception = assertThrows(ServletException.class, () ->
+                mockMvc.perform(get("/api/proveedores/{id}", 99L)));
+
+        assertThat(exception.getCause())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Cliente no encontrado con id: 99");
+    }
+
+    @Test
+    @DisplayName("POST /api/proveedores - propaga error de duplicado del servicio")
+    void crearProveedor_CuandoServicioLanzaDuplicado_PropagaExcepcion() {
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("12345678")
+                .razonSocialONombre("Proveedor Test")
+                .direccion("Av. Peru 123")
+                .telefono("987654321")
+                .build();
+
+        when(proveedorService.crearProveedor(any(ProveedorDto.class)))
+                .thenThrow(new IllegalArgumentException("Ya existe un cliente con ese DNI o RUC"));
+
+        ServletException exception = assertThrows(ServletException.class, () ->
+                mockMvc.perform(post("/api/proveedores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))));
+
+        assertThat(exception.getCause())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Ya existe un cliente con ese DNI o RUC");
+    }
+
+    @Test
+    @DisplayName("DELETE /api/proveedores/{id} - propaga error del servicio cuando no existe")
+    void eliminarProveedor_CuandoServicioLanzaError_PropagaExcepcion() {
+        doThrow(new IllegalArgumentException("No existe cliente con id: 99"))
+                .when(proveedorService).eliminarProveedor(99L);
+
+        ServletException exception = assertThrows(ServletException.class, () ->
+                mockMvc.perform(delete("/api/proveedores/{id}", 99L)));
+
+        assertThat(exception.getCause())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No existe cliente con id: 99");
     }
 }

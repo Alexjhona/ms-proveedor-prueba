@@ -158,6 +158,61 @@ class ProveedorServiceImplTest {
     }
 
     @Test
+    @DisplayName("Crear proveedor con RUC - si SUNAT falla mantiene la razon social enviada")
+    void crearProveedor_ConRucCuandoSunatFalla_MantieneRazonSocialEnviada() {
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("20123456789")
+                .razonSocialONombre("Empresa Manual SAC")
+                .direccion("Jr. Manual 200")
+                .telefono("900222333")
+                .build();
+
+        when(sunatClient.obtenerInfoRuc("20123456789")).thenThrow(new RuntimeException("Error SUNAT"));
+        when(proveedorRepository.existsByDniOrRuc("20123456789")).thenReturn(false);
+        when(proveedorRepository.save(any(Proveedor.class))).thenAnswer(invocation -> {
+            Proveedor proveedor = invocation.getArgument(0);
+            proveedor.setId(4L);
+            return proveedor;
+        });
+
+        ProveedorDto resultado = proveedorService.crearProveedor(request);
+
+        assertThat(resultado.getId()).isEqualTo(4L);
+        assertThat(resultado.getRazonSocialONombre()).isEqualTo("Empresa Manual SAC");
+
+        verify(sunatClient).obtenerInfoRuc("20123456789");
+        verify(proveedorRepository).save(argThat(proveedor ->
+                proveedor.getRazonSocialONombre().equals("Empresa Manual SAC")
+        ));
+    }
+
+    @Test
+    @DisplayName("Crear proveedor con documento distinto de DNI/RUC - no consulta SUNAT")
+    void crearProveedor_ConDocumentoDeOtraLongitud_NoConsultaSunat() {
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("ABC123")
+                .razonSocialONombre("Proveedor Manual")
+                .direccion("Av. Sin Consulta 123")
+                .telefono("900444555")
+                .build();
+
+        when(proveedorRepository.existsByDniOrRuc("ABC123")).thenReturn(false);
+        when(proveedorRepository.save(any(Proveedor.class))).thenAnswer(invocation -> {
+            Proveedor proveedor = invocation.getArgument(0);
+            proveedor.setId(5L);
+            return proveedor;
+        });
+
+        ProveedorDto resultado = proveedorService.crearProveedor(request);
+
+        assertThat(resultado.getId()).isEqualTo(5L);
+        assertThat(resultado.getRazonSocialONombre()).isEqualTo("Proveedor Manual");
+
+        verifyNoInteractions(sunatClient);
+        verify(proveedorRepository).save(any(Proveedor.class));
+    }
+
+    @Test
     @DisplayName("Obtener proveedor por id - retorna proveedor existente")
     void obtenerProveedorPorId_CuandoExiste_RetornaProveedor() {
         Proveedor proveedor = Proveedor.builder()
@@ -285,6 +340,139 @@ class ProveedorServiceImplTest {
 
         assertThat(exception.getMessage()).contains("no encontrado");
         verify(proveedorRepository, never()).save(any(Proveedor.class));
+    }
+
+    @Test
+    @DisplayName("Actualizar proveedor con DNI - consulta SUNAT y actualiza nombre")
+    void actualizarProveedor_ConDni_ConsultaSunatYActualizaNombre() {
+        Proveedor existente = Proveedor.builder()
+                .id(1L)
+                .dniOrRuc("20123456789")
+                .razonSocialONombre("Proveedor Antiguo")
+                .direccion("Direccion Antigua")
+                .telefono("900000000")
+                .build();
+
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("87654321")
+                .razonSocialONombre("Nombre Manual")
+                .direccion("Direccion Nueva")
+                .telefono("922222222")
+                .build();
+
+        DniResponse dniResponse = new DniResponse();
+        dniResponse.setNombre("Maria Lopez");
+
+        when(proveedorRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(sunatClient.obtenerInfoDni("87654321")).thenReturn(dniResponse);
+        when(proveedorRepository.existsByDniOrRuc("87654321")).thenReturn(false);
+        when(proveedorRepository.save(any(Proveedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProveedorDto resultado = proveedorService.actualizarProveedor(1L, request);
+
+        assertThat(resultado.getDniOrRuc()).isEqualTo("87654321");
+        assertThat(resultado.getRazonSocialONombre()).isEqualTo("Maria Lopez");
+        assertThat(resultado.getDireccion()).isEqualTo("Direccion Nueva");
+
+        verify(sunatClient).obtenerInfoDni("87654321");
+        verify(proveedorRepository).existsByDniOrRuc("87654321");
+        verify(proveedorRepository).save(existente);
+    }
+
+    @Test
+    @DisplayName("Actualizar proveedor con RUC - si SUNAT falla mantiene razon social enviada")
+    void actualizarProveedor_ConRucCuandoSunatFalla_MantieneRazonSocialEnviada() {
+        Proveedor existente = Proveedor.builder()
+                .id(1L)
+                .dniOrRuc("12345678")
+                .razonSocialONombre("Proveedor Antiguo")
+                .direccion("Direccion Antigua")
+                .telefono("900000000")
+                .build();
+
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("20123456789")
+                .razonSocialONombre("Empresa Manual SAC")
+                .direccion("Direccion Nueva")
+                .telefono("933333333")
+                .build();
+
+        when(proveedorRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(sunatClient.obtenerInfoRuc("20123456789")).thenThrow(new RuntimeException("Error SUNAT"));
+        when(proveedorRepository.existsByDniOrRuc("20123456789")).thenReturn(false);
+        when(proveedorRepository.save(any(Proveedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProveedorDto resultado = proveedorService.actualizarProveedor(1L, request);
+
+        assertThat(resultado.getDniOrRuc()).isEqualTo("20123456789");
+        assertThat(resultado.getRazonSocialONombre()).isEqualTo("Empresa Manual SAC");
+
+        verify(sunatClient).obtenerInfoRuc("20123456789");
+        verify(proveedorRepository).save(existente);
+    }
+
+    @Test
+    @DisplayName("Actualizar proveedor con DNI - si SUNAT falla mantiene nombre enviado")
+    void actualizarProveedor_ConDniCuandoSunatFalla_MantieneNombreEnviado() {
+        Proveedor existente = Proveedor.builder()
+                .id(1L)
+                .dniOrRuc("20123456789")
+                .razonSocialONombre("Proveedor Antiguo")
+                .direccion("Direccion Antigua")
+                .telefono("900000000")
+                .build();
+
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("87654321")
+                .razonSocialONombre("Nombre Manual")
+                .direccion("Direccion Nueva")
+                .telefono("955555555")
+                .build();
+
+        when(proveedorRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(sunatClient.obtenerInfoDni("87654321")).thenThrow(new RuntimeException("Error SUNAT"));
+        when(proveedorRepository.existsByDniOrRuc("87654321")).thenReturn(false);
+        when(proveedorRepository.save(any(Proveedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProveedorDto resultado = proveedorService.actualizarProveedor(1L, request);
+
+        assertThat(resultado.getDniOrRuc()).isEqualTo("87654321");
+        assertThat(resultado.getRazonSocialONombre()).isEqualTo("Nombre Manual");
+
+        verify(sunatClient).obtenerInfoDni("87654321");
+        verify(proveedorRepository).save(existente);
+    }
+
+    @Test
+    @DisplayName("Actualizar proveedor con mismo DNI/RUC - no valida duplicado")
+    void actualizarProveedor_ConMismoDniORuc_NoConsultaExistenciaPorDuplicado() {
+        Proveedor existente = Proveedor.builder()
+                .id(1L)
+                .dniOrRuc("ABC123")
+                .razonSocialONombre("Proveedor Antiguo")
+                .direccion("Direccion Antigua")
+                .telefono("900000000")
+                .build();
+
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("ABC123")
+                .razonSocialONombre("Proveedor Actualizado")
+                .direccion("Direccion Actualizada")
+                .telefono("944444444")
+                .build();
+
+        when(proveedorRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(proveedorRepository.save(any(Proveedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProveedorDto resultado = proveedorService.actualizarProveedor(1L, request);
+
+        assertThat(resultado.getDniOrRuc()).isEqualTo("ABC123");
+        assertThat(resultado.getRazonSocialONombre()).isEqualTo("Proveedor Actualizado");
+        assertThat(resultado.getDireccion()).isEqualTo("Direccion Actualizada");
+
+        verifyNoInteractions(sunatClient);
+        verify(proveedorRepository, never()).existsByDniOrRuc(anyString());
+        verify(proveedorRepository).save(existente);
     }
 
     @Test

@@ -14,9 +14,9 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI().info(new Info()
-                .title("OPEN API MICROSERVICIO PROVEEDORES")
+                .title("OPEN API MICROSERVICIO PROVEEDOR")
                 .version("0.0.1")
-                .description("Documentación de endpoints para CRUD de Proveedor")
+                .description("Documentacion de endpoints para registrar, consultar, actualizar y eliminar proveedores del sistema.")
                 .termsOfService("http://swagger.io/terms")
                 .license(new License().name("Apache 2.0").url("http://springdoc.org"))
         );
