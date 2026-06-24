@@ -1,9 +1,10 @@
 package com.example.ms_proveedor.controller;
 
 import com.example.ms_proveedor.dto.ProveedorDto;
+import com.example.ms_proveedor.exception.ConflictoRecursoException;
+import com.example.ms_proveedor.exception.RecursoNoEncontradoException;
 import com.example.ms_proveedor.service.ProveedorService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -45,20 +44,10 @@ class ProveedorControllerTest {
     @Test
     @DisplayName("POST /api/proveedores - crea proveedor correctamente")
     void crearProveedor_RetornaCreated() throws Exception {
-        ProveedorDto request = ProveedorDto.builder()
-                .dniOrRuc("12345678")
-                .razonSocialONombre("Proveedor Test")
-                .direccion("Av. Peru 123")
-                .telefono("987654321")
-                .build();
-
-        ProveedorDto response = ProveedorDto.builder()
-                .id(1L)
-                .dniOrRuc("12345678")
-                .razonSocialONombre("Proveedor Test")
-                .direccion("Av. Peru 123")
-                .telefono("987654321")
-                .build();
+        ProveedorDto request = proveedorDto("20123456789", "Proveedor Test", "contacto@proveedor.com",
+                "Av. Peru 123", "987654321");
+        ProveedorDto response = proveedorDto(1L, "20123456789", "Proveedor Test", "contacto@proveedor.com",
+                "Av. Peru 123", "987654321");
 
         when(proveedorService.crearProveedor(any(ProveedorDto.class))).thenReturn(response);
 
@@ -67,8 +56,9 @@ class ProveedorControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.dniOrRuc").value("12345678"))
+                .andExpect(jsonPath("$.dniOrRuc").value("20123456789"))
                 .andExpect(jsonPath("$.razonSocialONombre").value("Proveedor Test"))
+                .andExpect(jsonPath("$.correoElectronico").value("contacto@proveedor.com"))
                 .andExpect(jsonPath("$.direccion").value("Av. Peru 123"))
                 .andExpect(jsonPath("$.telefono").value("987654321"));
 
@@ -78,20 +68,15 @@ class ProveedorControllerTest {
     @Test
     @DisplayName("GET /api/proveedores/{id} - obtiene proveedor por id")
     void obtenerProveedorPorId_RetornaOk() throws Exception {
-        ProveedorDto response = ProveedorDto.builder()
-                .id(1L)
-                .dniOrRuc("12345678")
-                .razonSocialONombre("Proveedor Test")
-                .direccion("Av. Peru 123")
-                .telefono("987654321")
-                .build();
+        ProveedorDto response = proveedorDto(1L, "20123456789", "Proveedor Test", "contacto@proveedor.com",
+                "Av. Peru 123", "987654321");
 
         when(proveedorService.obtenerProveedorPorId(1L)).thenReturn(response);
 
         mockMvc.perform(get("/api/proveedores/{id}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.dniOrRuc").value("12345678"))
+                .andExpect(jsonPath("$.dniOrRuc").value("20123456789"))
                 .andExpect(jsonPath("$.razonSocialONombre").value("Proveedor Test"));
 
         verify(proveedorService).obtenerProveedorPorId(1L);
@@ -100,21 +85,10 @@ class ProveedorControllerTest {
     @Test
     @DisplayName("GET /api/proveedores - lista proveedores")
     void listarProveedores_RetornaOk() throws Exception {
-        ProveedorDto proveedor1 = ProveedorDto.builder()
-                .id(1L)
-                .dniOrRuc("12345678")
-                .razonSocialONombre("Proveedor Uno")
-                .direccion("Direccion 1")
-                .telefono("900111222")
-                .build();
-
-        ProveedorDto proveedor2 = ProveedorDto.builder()
-                .id(2L)
-                .dniOrRuc("20123456789")
-                .razonSocialONombre("Proveedor Dos")
-                .direccion("Direccion 2")
-                .telefono("900333444")
-                .build();
+        ProveedorDto proveedor1 = proveedorDto(1L, "20123456789", "Proveedor Uno", "uno@proveedor.com",
+                "Direccion 1", "900111222");
+        ProveedorDto proveedor2 = proveedorDto(2L, "20987654321", "Proveedor Dos", "dos@proveedor.com",
+                "Direccion 2", "900333444");
 
         when(proveedorService.listarProveedores()).thenReturn(List.of(proveedor1, proveedor2));
 
@@ -132,20 +106,10 @@ class ProveedorControllerTest {
     @Test
     @DisplayName("PUT /api/proveedores/{id} - actualiza proveedor")
     void actualizarProveedor_RetornaOk() throws Exception {
-        ProveedorDto request = ProveedorDto.builder()
-                .dniOrRuc("20123456789")
-                .razonSocialONombre("Proveedor Actualizado")
-                .direccion("Nueva Direccion")
-                .telefono("911111111")
-                .build();
-
-        ProveedorDto response = ProveedorDto.builder()
-                .id(1L)
-                .dniOrRuc("20123456789")
-                .razonSocialONombre("Proveedor Actualizado")
-                .direccion("Nueva Direccion")
-                .telefono("911111111")
-                .build();
+        ProveedorDto request = proveedorDto("20123456789", "Proveedor Actualizado", "contacto@proveedor.com",
+                "Nueva Direccion", "911111111");
+        ProveedorDto response = proveedorDto(1L, "20123456789", "Proveedor Actualizado", "contacto@proveedor.com",
+                "Nueva Direccion", "911111111");
 
         when(proveedorService.actualizarProveedor(eq(1L), any(ProveedorDto.class))).thenReturn(response);
 
@@ -156,6 +120,7 @@ class ProveedorControllerTest {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.dniOrRuc").value("20123456789"))
                 .andExpect(jsonPath("$.razonSocialONombre").value("Proveedor Actualizado"))
+                .andExpect(jsonPath("$.correoElectronico").value("contacto@proveedor.com"))
                 .andExpect(jsonPath("$.direccion").value("Nueva Direccion"))
                 .andExpect(jsonPath("$.telefono").value("911111111"));
 
@@ -174,45 +139,49 @@ class ProveedorControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/proveedores - retorna Bad Request si datos obligatorios están vacíos")
+    @DisplayName("POST /api/proveedores - retorna Bad Request con todos los errores de validacion")
     void crearProveedor_DatosInvalidos_RetornaBadRequest() throws Exception {
-        ProveedorDto request = ProveedorDto.builder()
-                .dniOrRuc("")
-                .razonSocialONombre("Proveedor Test")
-                .direccion("")
-                .telefono("")
-                .build();
+        ProveedorDto request = proveedorDto("", "Proveedor Test", "", "", "");
 
         mockMvc.perform(post("/api/proveedores")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("Validación fallida"))
-                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.mensajes.direccion").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.mensajes.telefono").value("Campo obligatorio"));
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.mensaje").value("Se encontraron errores de validación"))
+                .andExpect(jsonPath("$.ruta").value("/api/proveedores"))
+                .andExpect(jsonPath("$.datosRecibidos.dniOrRuc").value(""))
+                .andExpect(jsonPath("$.datosRecibidos.correoElectronico").value(""))
+                .andExpect(jsonPath("$.datosRecibidos.direccion").value(""))
+                .andExpect(jsonPath("$.datosRecibidos.telefono").value(""))
+                .andExpect(jsonPath("$.errores.*", hasSize(4)))
+                .andExpect(jsonPath("$.errores.dniOrRuc").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.correoElectronico").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.direccion").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.telefono").value("Campo obligatorio"));
     }
 
     @Test
-    @DisplayName("PUT /api/proveedores/{id} - retorna Bad Request si datos obligatorios estan vacios")
+    @DisplayName("PUT /api/proveedores/{id} - retorna Bad Request con datos recibidos y errores")
     void actualizarProveedor_DatosInvalidos_RetornaBadRequest() throws Exception {
-        ProveedorDto request = ProveedorDto.builder()
-                .dniOrRuc("")
-                .razonSocialONombre("Proveedor Test")
-                .direccion("")
-                .telefono("")
-                .build();
+        ProveedorDto request = proveedorDto("", "Proveedor Test", "", "", "");
 
         mockMvc.perform(put("/api/proveedores/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("Validación fallida"))
-                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.mensajes.direccion").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.mensajes.telefono").value("Campo obligatorio"));
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.mensaje").value("Se encontraron errores de validación"))
+                .andExpect(jsonPath("$.ruta").value("/api/proveedores/1"))
+                .andExpect(jsonPath("$.datosRecibidos.razonSocialONombre").value("Proveedor Test"))
+                .andExpect(jsonPath("$.errores.dniOrRuc").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.correoElectronico").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.direccion").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.telefono").value("Campo obligatorio"));
     }
 
     @Test
@@ -227,79 +196,143 @@ class ProveedorControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("Validación fallida"))
-                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.mensajes.direccion").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.mensajes.telefono").value("Campo obligatorio"));
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.datosRecibidos.razonSocialONombre").value("Proveedor Test"))
+                .andExpect(jsonPath("$.errores.dniOrRuc").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.correoElectronico").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.direccion").value("Campo obligatorio"))
+                .andExpect(jsonPath("$.errores.telefono").value("Campo obligatorio"));
     }
 
     @Test
-    @DisplayName("PUT /api/proveedores/{id} - retorna Bad Request si DNI/RUC tiene formato invalido")
+    @DisplayName("PUT /api/proveedores/{id} - retorna Bad Request si RUC tiene formato invalido")
     void actualizarProveedor_DocumentoInvalido_RetornaBadRequestConMensaje() throws Exception {
-        ProveedorDto request = ProveedorDto.builder()
-                .dniOrRuc("ABC123")
-                .razonSocialONombre("Proveedor Test")
-                .direccion("Av. Peru 123")
-                .telefono("987654321")
-                .build();
+        ProveedorDto request = proveedorDto("ABC123", "Proveedor Test", "contacto@proveedor.com",
+                "Av. Peru 123", "987654321");
 
         mockMvc.perform(put("/api/proveedores/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("Validación fallida"))
-                .andExpect(jsonPath("$.mensajes.dniOrRuc").value("Formato inválido"));
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.datosRecibidos.dniOrRuc").value("ABC123"))
+                .andExpect(jsonPath("$.errores.dniOrRuc").value("RUC debe tener 11 digitos"));
     }
 
     @Test
-    @DisplayName("GET /api/proveedores/{id} - propaga error del servicio cuando no existe")
-    void obtenerProveedor_CuandoServicioLanzaError_PropagaExcepcion() {
+    @DisplayName("POST /api/proveedores - retorna Bad Request si un campo tiene tipo invalido")
+    void crearProveedor_TipoDatoInvalido_RetornaBadRequestConCampo() throws Exception {
+        String request = """
+                {
+                  "id": "abc",
+                  "dniOrRuc": "20123456789",
+                  "razonSocialONombre": "Proveedor Test",
+                  "correoElectronico": "contacto@proveedor.com",
+                  "direccion": "Av. Peru 123",
+                  "telefono": "987654321"
+                }
+                """;
+
+        mockMvc.perform(post("/api/proveedores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.mensaje").value("Se encontraron errores de validación"))
+                .andExpect(jsonPath("$.ruta").value("/api/proveedores"))
+                .andExpect(jsonPath("$.datosRecibidos.id").value("abc"))
+                .andExpect(jsonPath("$.errores.id").value("Tipo de dato invalido"));
+    }
+
+    @Test
+    @DisplayName("GET /api/proveedores/{id} - retorna Not Found uniforme")
+    void obtenerProveedor_CuandoServicioLanzaNoEncontrado_RetornaNotFound() throws Exception {
         when(proveedorService.obtenerProveedorPorId(99L))
-                .thenThrow(new IllegalArgumentException("Cliente no encontrado con id: 99"));
+                .thenThrow(new RecursoNoEncontradoException("Proveedor no encontrado con id: 99"));
 
-        ServletException exception = assertThrows(ServletException.class, () ->
-                mockMvc.perform(get("/api/proveedores/{id}", 99L)));
-
-        assertThat(exception.getCause())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Cliente no encontrado con id: 99");
+        mockMvc.perform(get("/api/proveedores/{id}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.mensaje").value("No se encontró el recurso solicitado"))
+                .andExpect(jsonPath("$.ruta").value("/api/proveedores/99"));
     }
 
     @Test
-    @DisplayName("POST /api/proveedores - propaga error de duplicado del servicio")
-    void crearProveedor_CuandoServicioLanzaDuplicado_PropagaExcepcion() {
-        ProveedorDto request = ProveedorDto.builder()
-                .dniOrRuc("12345678")
-                .razonSocialONombre("Proveedor Test")
-                .direccion("Av. Peru 123")
-                .telefono("987654321")
-                .build();
+    @DisplayName("POST /api/proveedores - retorna Conflict uniforme ante duplicado")
+    void crearProveedor_CuandoServicioLanzaDuplicado_RetornaConflict() throws Exception {
+        ProveedorDto request = proveedorDto("20123456789", "Proveedor Test", "contacto@proveedor.com",
+                "Av. Peru 123", "987654321");
 
         when(proveedorService.crearProveedor(any(ProveedorDto.class)))
-                .thenThrow(new IllegalArgumentException("Ya existe un cliente con ese DNI o RUC"));
+                .thenThrow(new ConflictoRecursoException("Ya existe un proveedor con ese RUC"));
 
-        ServletException exception = assertThrows(ServletException.class, () ->
-                mockMvc.perform(post("/api/proveedores")
+        mockMvc.perform(post("/api/proveedores")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))));
-
-        assertThat(exception.getCause())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Ya existe un cliente con ese DNI o RUC");
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.mensaje").value("El registro ya existe o genera conflicto"))
+                .andExpect(jsonPath("$.ruta").value("/api/proveedores"));
     }
 
     @Test
-    @DisplayName("DELETE /api/proveedores/{id} - propaga error del servicio cuando no existe")
-    void eliminarProveedor_CuandoServicioLanzaError_PropagaExcepcion() {
-        doThrow(new IllegalArgumentException("No existe cliente con id: 99"))
+    @DisplayName("DELETE /api/proveedores/{id} - retorna Not Found uniforme")
+    void eliminarProveedor_CuandoServicioLanzaNoEncontrado_RetornaNotFound() throws Exception {
+        doThrow(new RecursoNoEncontradoException("No existe proveedor con id: 99"))
                 .when(proveedorService).eliminarProveedor(99L);
 
-        ServletException exception = assertThrows(ServletException.class, () ->
-                mockMvc.perform(delete("/api/proveedores/{id}", 99L)));
+        mockMvc.perform(delete("/api/proveedores/{id}", 99L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.mensaje").value("No se encontró el recurso solicitado"))
+                .andExpect(jsonPath("$.ruta").value("/api/proveedores/99"));
+    }
 
-        assertThat(exception.getCause())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("No existe cliente con id: 99");
+    @Test
+    @DisplayName("GET /api/proveedores - retorna Internal Server Error uniforme")
+    void listarProveedores_CuandoServicioLanzaError_RetornaInternalServerError() throws Exception {
+        when(proveedorService.listarProveedores()).thenThrow(new RuntimeException("Error inesperado"));
+
+        mockMvc.perform(get("/api/proveedores"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.error").value("Internal Server Error"))
+                .andExpect(jsonPath("$.mensaje").value("Ocurrió un error inesperado en el servidor"))
+                .andExpect(jsonPath("$.ruta").value("/api/proveedores"));
+    }
+
+    private ProveedorDto proveedorDto(
+            String dniOrRuc,
+            String razonSocialONombre,
+            String correoElectronico,
+            String direccion,
+            String telefono) {
+        return proveedorDto(null, dniOrRuc, razonSocialONombre, correoElectronico, direccion, telefono);
+    }
+
+    private ProveedorDto proveedorDto(
+            Long id,
+            String dniOrRuc,
+            String razonSocialONombre,
+            String correoElectronico,
+            String direccion,
+            String telefono) {
+        return ProveedorDto.builder()
+                .id(id)
+                .dniOrRuc(dniOrRuc)
+                .razonSocialONombre(razonSocialONombre)
+                .correoElectronico(correoElectronico)
+                .direccion(direccion)
+                .telefono(telefono)
+                .build();
     }
 }

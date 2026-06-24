@@ -2,11 +2,13 @@ package com.example.ms_proveedor.service.impl;
 
 import com.example.ms_proveedor.dto.ProveedorDto;
 import com.example.ms_proveedor.entity.Proveedor;
+import com.example.ms_proveedor.exception.ConflictoRecursoException;
+import com.example.ms_proveedor.exception.RecursoNoEncontradoException;
 import com.example.ms_proveedor.feign.SunatClient;
-import com.example.ms_proveedor.dto.DniResponse;
 import com.example.ms_proveedor.dto.RucResponse;
 import com.example.ms_proveedor.repository.ProveedorRepository;
 import com.example.ms_proveedor.service.ProveedorService;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,17 +27,8 @@ public class ProveedorServiceImpl implements ProveedorService {
     public ProveedorDto crearProveedor(ProveedorDto proveedorDto) {
         String razonSocial = proveedorDto.getRazonSocialONombre();
 
-        // Si es DNI (8 dígitos), consultamos SUNAT y tomamos solo el nombre
-        if (proveedorDto.getDniOrRuc().length() == 8) {
-            try {
-                DniResponse respuesta = sunatClient.obtenerInfoDni(proveedorDto.getDniOrRuc());
-                razonSocial = respuesta.getNombre();
-            } catch (Exception ex) {
-                // Si falla, mantenemos el valor enviado
-            }
-        }
-        // Si es RUC (11 dígitos), consultamos SUNAT y tomamos el nombre
-        else if (proveedorDto.getDniOrRuc().length() == 11) {
+        // Proveedores se consultan solo por RUC.
+        if (proveedorDto.getDniOrRuc().length() == 11) {
             try {
                 RucResponse respuesta = sunatClient.obtenerInfoRuc(proveedorDto.getDniOrRuc());
                 razonSocial = respuesta.getNombre();
@@ -47,12 +40,13 @@ public class ProveedorServiceImpl implements ProveedorService {
         proveedorDto.setRazonSocialONombre(razonSocial);
 
         if (proveedorRepository.existsByDniOrRuc(proveedorDto.getDniOrRuc())) {
-            throw new IllegalArgumentException("Ya existe un cliente con ese DNI o RUC");
+            throw new ConflictoRecursoException("Ya existe un proveedor con ese RUC");
         }
 
         Proveedor entidad = Proveedor.builder()
                 .dniOrRuc(proveedorDto.getDniOrRuc())
                 .razonSocialONombre(proveedorDto.getRazonSocialONombre())
+                .correoElectronico(proveedorDto.getCorreoElectronico())
                 .direccion(proveedorDto.getDireccion())
                 .telefono(proveedorDto.getTelefono())
                 .build();
@@ -64,7 +58,7 @@ public class ProveedorServiceImpl implements ProveedorService {
     @Override
     public ProveedorDto obtenerProveedorPorId(Long id) {
         Proveedor proveedor = proveedorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado con id: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Proveedor no encontrado con id: " + id));
         return mapToDto(proveedor);
     }
 
@@ -79,19 +73,12 @@ public class ProveedorServiceImpl implements ProveedorService {
     @Override
     public ProveedorDto actualizarProveedor(Long id, ProveedorDto proveedorDto) {
         Proveedor existente = proveedorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado con id: " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Proveedor no encontrado con id: " + id));
 
         String razonSocial = proveedorDto.getRazonSocialONombre();
 
-        // Siempre consultamos SUNAT al editar, si es DNI o RUC
-        if (proveedorDto.getDniOrRuc().length() == 8) {
-            try {
-                DniResponse respuesta = sunatClient.obtenerInfoDni(proveedorDto.getDniOrRuc());
-                razonSocial = respuesta.getNombre();
-            } catch (Exception ex) {
-                // Mantener valor enviado
-            }
-        } else if (proveedorDto.getDniOrRuc().length() == 11) {
+        // Proveedores se consultan solo por RUC.
+        if (proveedorDto.getDniOrRuc().length() == 11) {
             try {
                 RucResponse respuesta = sunatClient.obtenerInfoRuc(proveedorDto.getDniOrRuc());
                 razonSocial = respuesta.getNombre();
@@ -104,11 +91,12 @@ public class ProveedorServiceImpl implements ProveedorService {
 
         if (!existente.getDniOrRuc().equals(proveedorDto.getDniOrRuc())
                 && proveedorRepository.existsByDniOrRuc(proveedorDto.getDniOrRuc())) {
-            throw new IllegalArgumentException("Ya existe otro cliente con ese DNI o RUC");
+            throw new ConflictoRecursoException("Ya existe otro proveedor con ese RUC");
         }
 
         existente.setDniOrRuc(proveedorDto.getDniOrRuc());
         existente.setRazonSocialONombre(proveedorDto.getRazonSocialONombre());
+        existente.setCorreoElectronico(proveedorDto.getCorreoElectronico());
         existente.setDireccion(proveedorDto.getDireccion());
         existente.setTelefono(proveedorDto.getTelefono());
         Proveedor actualizado = proveedorRepository.save(existente);
@@ -118,9 +106,21 @@ public class ProveedorServiceImpl implements ProveedorService {
     @Override
     public void eliminarProveedor(Long id) {
         if (!proveedorRepository.existsById(id)) {
-            throw new IllegalArgumentException("No existe cliente con id: " + id);
+            throw new RecursoNoEncontradoException("No existe proveedor con id: " + id);
         }
         proveedorRepository.deleteById(id);
+    }
+
+    @Override
+    public RucResponse consultarRuc(String ruc) {
+        if (ruc == null || !ruc.matches("\\d{11}")) {
+            throw new IllegalArgumentException("RUC invalido");
+        }
+        try {
+            return sunatClient.obtenerInfoRuc(ruc);
+        } catch (FeignException.NotFound | FeignException.UnprocessableEntity ex) {
+            throw new IllegalArgumentException("No se encontro el RUC en la API gratuita");
+        }
     }
 
     private ProveedorDto mapToDto(Proveedor entidad) {
@@ -128,6 +128,7 @@ public class ProveedorServiceImpl implements ProveedorService {
                 .id(entidad.getId())
                 .dniOrRuc(entidad.getDniOrRuc())
                 .razonSocialONombre(entidad.getRazonSocialONombre())
+                .correoElectronico(entidad.getCorreoElectronico())
                 .direccion(entidad.getDireccion())
                 .telefono(entidad.getTelefono())
                 .build();

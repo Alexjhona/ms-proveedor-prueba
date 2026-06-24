@@ -1,6 +1,7 @@
 package com.example.ms_proveedor.controller;
 
 import com.example.ms_proveedor.dto.ProveedorDto;
+import com.example.ms_proveedor.dto.RucResponse;
 import com.example.ms_proveedor.service.ProveedorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -53,6 +54,12 @@ public class ProveedorController {
     public ResponseEntity<List<ProveedorDto>> listar() {
         List<ProveedorDto> lista = proveedorService.listarProveedores();
         return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("/ruc/{ruc}")
+    @Operation(summary = "Consultar proveedor por RUC", description = "Consulta una API externa usando el RUC y devuelve la razon social para autocompletar proveedores.")
+    public ResponseEntity<RucResponse> consultarRuc(@Parameter(description = "RUC de 11 digitos.", example = "20123456789") @PathVariable String ruc) {
+        return ResponseEntity.ok(proveedorService.consultarRuc(ruc));
     }
 
     @PutMapping("/{id}")

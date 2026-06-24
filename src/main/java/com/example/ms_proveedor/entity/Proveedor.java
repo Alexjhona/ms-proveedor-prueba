@@ -17,7 +17,7 @@ public class Proveedor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "DNI o RUC es obligatorio")
+    @NotBlank(message = "RUC es obligatorio")
     @Column(name = "dni_or_ruc", unique = true, nullable = false, length = 20)
     private String dniOrRuc;
 
@@ -25,7 +25,10 @@ public class Proveedor {
     @Column(name = "razon_social_o_nombre", nullable = false)
     private String razonSocialONombre;
 
-    @NotBlank(message = "Dirección es obligatoria")
+    @NotBlank(message = "Correo electronico es obligatorio")
+    @Column(name = "correo_electronico", nullable = false)
+    private String correoElectronico;
+
     @Column(nullable = false)
     private String direccion;
 

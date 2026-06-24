@@ -1,5 +1,6 @@
 package com.example.ms_proveedor.service;
 import com.example.ms_proveedor.dto.ProveedorDto;
+import com.example.ms_proveedor.dto.RucResponse;
 import java.util.List;
 
 public interface ProveedorService {
@@ -8,4 +9,5 @@ public interface ProveedorService {
     List<ProveedorDto> listarProveedores();
     ProveedorDto actualizarProveedor(Long id, ProveedorDto proveedorDto);
     void eliminarProveedor(Long id);
+    RucResponse consultarRuc(String ruc);
 }
