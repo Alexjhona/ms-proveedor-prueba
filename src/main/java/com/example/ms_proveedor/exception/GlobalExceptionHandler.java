@@ -21,7 +21,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -183,8 +182,7 @@ public class GlobalExceptionHandler {
             return Collections.emptyMap();
         }
 
-        String encoding = wrapper.getCharacterEncoding();
-        Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
+        Charset charset = Charset.forName(wrapper.getCharacterEncoding());
         String body = new String(contenido, charset);
         if (body.isBlank()) {
             return Collections.emptyMap();

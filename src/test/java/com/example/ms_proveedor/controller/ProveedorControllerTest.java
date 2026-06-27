@@ -1,6 +1,7 @@
 package com.example.ms_proveedor.controller;
 
 import com.example.ms_proveedor.dto.ProveedorDto;
+import com.example.ms_proveedor.dto.RucResponse;
 import com.example.ms_proveedor.exception.ConflictoRecursoException;
 import com.example.ms_proveedor.exception.RecursoNoEncontradoException;
 import com.example.ms_proveedor.service.ProveedorService;
@@ -136,6 +137,21 @@ class ProveedorControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(proveedorService).eliminarProveedor(1L);
+    }
+
+    @Test
+    void consultarRuc_RetornaRespuestaDelServicio() throws Exception {
+        RucResponse response = new RucResponse();
+        response.setNumeroDocumento("20123456789");
+        response.setNombre("Empresa SAC");
+        when(proveedorService.consultarRuc("20123456789")).thenReturn(response);
+
+        mockMvc.perform(get("/api/proveedores/ruc/{ruc}", "20123456789"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.numeroDocumento").value("20123456789"))
+                .andExpect(jsonPath("$.nombre").value("Empresa SAC"));
+
+        verify(proveedorService).consultarRuc("20123456789");
     }
 
     @Test

@@ -7,6 +7,7 @@ import com.example.ms_proveedor.exception.ConflictoRecursoException;
 import com.example.ms_proveedor.exception.RecursoNoEncontradoException;
 import com.example.ms_proveedor.feign.SunatClient;
 import com.example.ms_proveedor.repository.ProveedorRepository;
+import feign.FeignException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,10 +19,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -342,6 +345,34 @@ class ProveedorServiceImplTest {
 
         assertThat(exception.getMessage()).contains("RUC invalido");
         verifyNoInteractions(sunatClient);
+    }
+
+    @Test
+    void consultarRuc_CuandoEsNulo_LanzaExcepcionSinConsultarSunat() {
+        assertThatThrownBy(() -> proveedorService.consultarRuc(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("RUC invalido");
+        verifyNoInteractions(sunatClient);
+    }
+
+    @Test
+    void consultarRuc_CuandoSunatNoEncuentraRuc_TraduceLaExcepcion() {
+        when(sunatClient.obtenerInfoRuc("20123456789"))
+                .thenThrow(mock(FeignException.NotFound.class));
+
+        assertThatThrownBy(() -> proveedorService.consultarRuc("20123456789"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No se encontro el RUC en la API gratuita");
+    }
+
+    @Test
+    void consultarRuc_CuandoSunatNoPuedeProcesarlo_TraduceLaExcepcion() {
+        when(sunatClient.obtenerInfoRuc("20123456789"))
+                .thenThrow(mock(FeignException.UnprocessableEntity.class));
+
+        assertThatThrownBy(() -> proveedorService.consultarRuc("20123456789"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No se encontro el RUC en la API gratuita");
     }
 
     private ProveedorDto proveedorDto(

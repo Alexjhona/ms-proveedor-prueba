@@ -6,7 +6,6 @@ import com.example.ms_proveedor.service.ProveedorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +27,8 @@ public class ProveedorController {
 
     @PostMapping
     @Operation(summary = "Registrar proveedor", description = "Registra un nuevo proveedor para ser utilizado en operaciones de compra y abastecimiento. El microservicio tiene cliente Feign para consultar una API externa de DNI/RUC cuando el servicio lo requiera.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Proveedor registrado correctamente"),
-            @ApiResponse(responseCode = "400", description = "Datos de proveedor invalidos")
-    })
+    @ApiResponse(responseCode = "201", description = "Proveedor registrado correctamente")
+    @ApiResponse(responseCode = "400", description = "Datos de proveedor invalidos")
     public ResponseEntity<ProveedorDto> crear(@Valid @RequestBody ProveedorDto proveedorDto) {
         ProveedorDto creado = proveedorService.crearProveedor(proveedorDto);
         return new ResponseEntity<>(creado, HttpStatus.CREATED);
@@ -39,10 +36,8 @@ public class ProveedorController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener proveedor por id", description = "Obtiene el detalle de un proveedor registrado usando su identificador unico, permitiendo validar informacion antes de operaciones de compra.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Proveedor encontrado"),
-            @ApiResponse(responseCode = "404", description = "Proveedor no encontrado")
-    })
+    @ApiResponse(responseCode = "200", description = "Proveedor encontrado")
+    @ApiResponse(responseCode = "404", description = "Proveedor no encontrado")
     public ResponseEntity<ProveedorDto> obtener(@Parameter(description = "Identificador unico del recurso proveedor.", example = "1") @PathVariable Long id) {
         ProveedorDto dto = proveedorService.obtenerProveedorPorId(id);
         return ResponseEntity.ok(dto);
@@ -64,10 +59,8 @@ public class ProveedorController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar proveedor", description = "Modifica los datos de un proveedor existente usando su identificador unico, manteniendo actualizado el registro para compras y abastecimiento.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Proveedor actualizado correctamente"),
-            @ApiResponse(responseCode = "404", description = "Proveedor no encontrado")
-    })
+    @ApiResponse(responseCode = "200", description = "Proveedor actualizado correctamente")
+    @ApiResponse(responseCode = "404", description = "Proveedor no encontrado")
     public ResponseEntity<ProveedorDto> actualizar(
             @Parameter(description = "Identificador unico del recurso proveedor.", example = "1") @PathVariable Long id,
             @Valid @RequestBody ProveedorDto proveedorDto) {
@@ -77,10 +70,8 @@ public class ProveedorController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar proveedor", description = "Elimina un proveedor registrado mediante su identificador. Verificar previamente si el proveedor esta asociado a compras existentes.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Proveedor eliminado correctamente"),
-            @ApiResponse(responseCode = "404", description = "Proveedor no encontrado")
-    })
+    @ApiResponse(responseCode = "204", description = "Proveedor eliminado correctamente")
+    @ApiResponse(responseCode = "404", description = "Proveedor no encontrado")
     public ResponseEntity<Void> eliminar(@Parameter(description = "Identificador unico del recurso proveedor.", example = "1") @PathVariable Long id) {
         proveedorService.eliminarProveedor(id);
         return ResponseEntity.noContent().build();
