@@ -34,7 +34,7 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler(new ObjectMapper());
 
     @Test
-    void validationPrioritizesRequiredMessageAndIncludesParsedBody() throws Exception {
+    void validationPrioritizesRequiredMessageAndIncludesParsedBody() {
         BeanPropertyBindingResult result = new BeanPropertyBindingResult(new Object(), "proveedor");
         result.addError(new FieldError("proveedor", "dniOrRuc", "Formato invalido"));
         result.addError(new FieldError("proveedor", "dniOrRuc", "Campo obligatorio"));
@@ -89,7 +89,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void requestParameterErrorsDescribeMissingAndInvalidValues() throws Exception {
+    void requestParameterErrorsDescribeMissingAndInvalidValues() {
         MockHttpServletRequest request = request("GET", "/api/proveedores/x");
         MissingServletRequestParameterException missing =
                 new MissingServletRequestParameterException("numero", "String");
@@ -133,7 +133,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void dataExtractionHandlesEmptyAndBlankCachedBodies() throws Exception {
+    void dataExtractionHandlesEmptyAndBlankCachedBodies() {
         ContentCachingRequestWrapper empty = new ContentCachingRequestWrapper(
                 request("POST", "/api/proveedores"));
         ContentCachingRequestWrapper blank = cachedRequest("POST", "/api/proveedores", "   ");

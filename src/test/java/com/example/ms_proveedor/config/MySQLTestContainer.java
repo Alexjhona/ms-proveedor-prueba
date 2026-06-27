@@ -1,5 +1,6 @@
 package com.example.ms_proveedor.config;
 
+import com.github.dockerjava.api.model.ContainerNetwork;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -40,7 +41,7 @@ public final class MySQLTestContainer {
                     .getNetworks()
                     .values()
                     .stream()
-                    .map(network -> network.getIpAddress())
+                    .map(ContainerNetwork::getIpAddress)
                     .filter(ip -> ip != null && !ip.isBlank())
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException(

@@ -31,6 +31,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
+    private static final String VALIDATION_ERROR_MESSAGE = "Se encontraron errores de validación";
+    private static final String REQUEST_FIELD = "solicitud";
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
     };
 
@@ -51,7 +53,7 @@ public class GlobalExceptionHandler {
         });
 
         return ResponseEntity.badRequest().body(badRequestBody(
-                "Se encontraron errores de validación",
+                VALIDATION_ERROR_MESSAGE,
                 request,
                 errores
         ));
@@ -66,7 +68,7 @@ public class GlobalExceptionHandler {
         errores.put(campo, "Tipo de dato invalido");
 
         return ResponseEntity.badRequest().body(badRequestBody(
-                "Se encontraron errores de validación",
+                VALIDATION_ERROR_MESSAGE,
                 request,
                 errores
         ));
@@ -84,7 +86,7 @@ public class GlobalExceptionHandler {
         errores.put(obtenerParametroConError(exception), obtenerMensajeParametro(exception));
 
         return ResponseEntity.badRequest().body(badRequestBody(
-                "Se encontraron errores de validación",
+                VALIDATION_ERROR_MESSAGE,
                 request,
                 errores
         ));
@@ -95,10 +97,10 @@ public class GlobalExceptionHandler {
             IllegalArgumentException exception,
             HttpServletRequest request) {
         Map<String, String> errores = new LinkedHashMap<>();
-        errores.put("solicitud", exception.getMessage());
+        errores.put(REQUEST_FIELD, exception.getMessage());
 
         return ResponseEntity.badRequest().body(badRequestBody(
-                "Se encontraron errores de validación",
+                VALIDATION_ERROR_MESSAGE,
                 request,
                 errores
         ));
@@ -113,7 +115,7 @@ public class GlobalExceptionHandler {
                 errores.put(violation.getPropertyPath().toString(), violation.getMessage()));
 
         return ResponseEntity.badRequest().body(badRequestBody(
-                "Se encontraron errores de validación",
+                VALIDATION_ERROR_MESSAGE,
                 request,
                 errores
         ));
@@ -203,7 +205,7 @@ public class GlobalExceptionHandler {
         if (causa instanceof JsonMappingException jsonMappingException) {
             return obtenerCampoDesdeRuta(jsonMappingException);
         }
-        return "solicitud";
+        return REQUEST_FIELD;
     }
 
     private String obtenerCampoDesdeRuta(JsonMappingException exception) {
@@ -211,7 +213,7 @@ public class GlobalExceptionHandler {
                 .map(JsonMappingException.Reference::getFieldName)
                 .filter(Objects::nonNull)
                 .reduce((anterior, actual) -> actual)
-                .orElse("solicitud");
+                .orElse(REQUEST_FIELD);
     }
 
     private String obtenerParametroConError(Exception exception) {
@@ -224,7 +226,7 @@ public class GlobalExceptionHandler {
         if (exception instanceof MethodArgumentTypeMismatchException typeMismatch) {
             return typeMismatch.getName();
         }
-        return "solicitud";
+        return REQUEST_FIELD;
     }
 
     private String obtenerMensajeParametro(Exception exception) {
