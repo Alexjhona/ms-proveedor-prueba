@@ -31,6 +31,7 @@ class ProveedorControllerIntegrationTest extends BaseIntegrationTest {
         proveedorRepository.deleteAll();
         when(sunatClient.obtenerInfoRuc("20123456789")).thenReturn(rucResponse("20123456789", "Proveedor SAC"));
         when(sunatClient.obtenerInfoRuc("20987654321")).thenReturn(rucResponse("20987654321", "Proveedor Actualizado SAC"));
+        when(sunatClient.obtenerInfoRuc("20888888888")).thenReturn(rucResponse("20888888888", "Proveedor Sin Direccion SAC"));
     }
 
     @Test
@@ -51,6 +52,27 @@ class ProveedorControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.telefono").value("987654321"));
 
         assertThat(proveedorRepository.existsByDniOrRuc("20123456789")).isTrue();
+    }
+
+    @Test
+    @DisplayName("POST /api/proveedores acepta el payload real del frontend sin direccion")
+    void crearProveedor_SinDireccion_RetornaCreated() throws Exception {
+        ProveedorDto request = ProveedorDto.builder()
+                .dniOrRuc("20888888888")
+                .razonSocialONombre("Nombre cargado")
+                .correoElectronico("contacto@proveedor.com")
+                .telefono("987654321")
+                .build();
+
+        mockMvc.perform(post("/api/proveedores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.dniOrRuc").value("20888888888"))
+                .andExpect(jsonPath("$.direccion").value(""));
+
+        Proveedor guardado = proveedorRepository.findAll().get(0);
+        assertThat(guardado.getDireccion()).isEmpty();
     }
 
     @Test

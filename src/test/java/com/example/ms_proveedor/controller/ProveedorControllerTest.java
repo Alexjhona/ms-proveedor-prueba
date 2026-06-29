@@ -172,10 +172,9 @@ class ProveedorControllerTest {
                 .andExpect(jsonPath("$.datosRecibidos.correoElectronico").value(""))
                 .andExpect(jsonPath("$.datosRecibidos.direccion").value(""))
                 .andExpect(jsonPath("$.datosRecibidos.telefono").value(""))
-                .andExpect(jsonPath("$.errores.*", hasSize(4)))
+                .andExpect(jsonPath("$.errores.*", hasSize(3)))
                 .andExpect(jsonPath("$.errores.dniOrRuc").value("Campo obligatorio"))
                 .andExpect(jsonPath("$.errores.correoElectronico").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.errores.direccion").value("Campo obligatorio"))
                 .andExpect(jsonPath("$.errores.telefono").value("Campo obligatorio"));
     }
 
@@ -196,7 +195,6 @@ class ProveedorControllerTest {
                 .andExpect(jsonPath("$.datosRecibidos.razonSocialONombre").value("Proveedor Test"))
                 .andExpect(jsonPath("$.errores.dniOrRuc").value("Campo obligatorio"))
                 .andExpect(jsonPath("$.errores.correoElectronico").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.errores.direccion").value("Campo obligatorio"))
                 .andExpect(jsonPath("$.errores.telefono").value("Campo obligatorio"));
     }
 
@@ -216,7 +214,6 @@ class ProveedorControllerTest {
                 .andExpect(jsonPath("$.datosRecibidos.razonSocialONombre").value("Proveedor Test"))
                 .andExpect(jsonPath("$.errores.dniOrRuc").value("Campo obligatorio"))
                 .andExpect(jsonPath("$.errores.correoElectronico").value("Campo obligatorio"))
-                .andExpect(jsonPath("$.errores.direccion").value("Campo obligatorio"))
                 .andExpect(jsonPath("$.errores.telefono").value("Campo obligatorio"));
     }
 

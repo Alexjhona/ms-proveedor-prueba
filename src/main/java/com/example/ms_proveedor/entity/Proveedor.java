@@ -29,8 +29,9 @@ public class Proveedor {
     @Column(name = "correo_electronico", nullable = false)
     private String correoElectronico;
 
+    @Builder.Default
     @Column(nullable = false)
-    private String direccion;
+    private String direccion = "";
 
     @NotBlank(message = "Teléfono es obligatorio")
     @Column(nullable = false)

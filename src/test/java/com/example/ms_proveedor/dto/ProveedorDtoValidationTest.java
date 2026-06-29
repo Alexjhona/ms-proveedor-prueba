@@ -51,11 +51,25 @@ class ProveedorDtoValidationTest {
         Map<String, Set<String>> errores = erroresPorCampo(validator.validate(dto));
 
         assertThat(errores)
-                .containsKeys("dniOrRuc", "correoElectronico", "direccion", "telefono");
+                .containsKeys("dniOrRuc", "correoElectronico", "telefono")
+                .doesNotContainKey("direccion");
         assertThat(errores.get("dniOrRuc")).contains("Campo obligatorio");
         assertThat(errores.get("correoElectronico")).contains("Campo obligatorio");
-        assertThat(errores.get("direccion")).contains("Campo obligatorio");
         assertThat(errores.get("telefono")).contains("Campo obligatorio");
+    }
+
+    @Test
+    @DisplayName("DTO valido - direccion omitida usa valor vacio compatible")
+    void proveedorDtoSinDireccion_NoGeneraViolaciones() {
+        ProveedorDto dto = ProveedorDto.builder()
+                .dniOrRuc("20123456789")
+                .razonSocialONombre("Proveedor SAC")
+                .correoElectronico("contacto@proveedor.com")
+                .telefono("987654321")
+                .build();
+
+        assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.getDireccion()).isEmpty();
     }
 
     @Test

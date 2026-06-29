@@ -129,7 +129,8 @@ class GlobalExceptionHandlerTest {
 
         assertThat(handler.handleRecursoNoEncontrado(request).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(handler.handleConflictoRecurso(request).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(handler.handleException(request).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(handler.handleException(new RuntimeException("fallo de prueba"), request).getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test

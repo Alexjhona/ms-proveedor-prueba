@@ -47,7 +47,7 @@ public class ProveedorServiceImpl implements ProveedorService {
                 .dniOrRuc(proveedorDto.getDniOrRuc())
                 .razonSocialONombre(proveedorDto.getRazonSocialONombre())
                 .correoElectronico(proveedorDto.getCorreoElectronico())
-                .direccion(proveedorDto.getDireccion())
+                .direccion(normalizarDireccion(proveedorDto.getDireccion()))
                 .telefono(proveedorDto.getTelefono())
                 .build();
 
@@ -97,7 +97,7 @@ public class ProveedorServiceImpl implements ProveedorService {
         existente.setDniOrRuc(proveedorDto.getDniOrRuc());
         existente.setRazonSocialONombre(proveedorDto.getRazonSocialONombre());
         existente.setCorreoElectronico(proveedorDto.getCorreoElectronico());
-        existente.setDireccion(proveedorDto.getDireccion());
+        existente.setDireccion(normalizarDireccion(proveedorDto.getDireccion()));
         existente.setTelefono(proveedorDto.getTelefono());
         Proveedor actualizado = proveedorRepository.save(existente);
         return mapToDto(actualizado);
@@ -132,5 +132,9 @@ public class ProveedorServiceImpl implements ProveedorService {
                 .direccion(entidad.getDireccion())
                 .telefono(entidad.getTelefono())
                 .build();
+    }
+
+    private String normalizarDireccion(String direccion) {
+        return direccion == null ? "" : direccion.trim();
     }
 }

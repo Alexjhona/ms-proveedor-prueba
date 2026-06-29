@@ -24,8 +24,8 @@ public class ProveedorDto {
     @Email(message = "Correo electronico invalido")
     private String correoElectronico;
 
-    @NotBlank(message = "Campo obligatorio")
-    private String direccion;
+    @Builder.Default
+    private String direccion = "";
 
     @NotBlank(message = "Campo obligatorio")
     private String telefono;
